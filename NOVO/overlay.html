@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Placar - Visualização OBS</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;900&family=Oswald:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: transparent;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    font-family: 'Barlow Condensed', sans-serif;
+  }
+
+  #scoreboard {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: stretch;
+    height: 68px;
+    filter: drop-shadow(0 4px 24px rgba(0,0,0,0.7));
+    transition: all 0.4s cubic-bezier(.4,0,.2,1);
+    opacity: 0;
+    pointer-events: none;
+  }
+  #scoreboard.visible { opacity: 1; }
+
+  .team-block {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 18px;
+    min-width: 160px;
+    max-width: 260px;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.5s;
+  }
+  #team-a-block { justify-content: flex-end; }
+  #team-b-block { justify-content: flex-start; }
+
+  .team-logo {
+    width: 40px; height: 40px;
+    object-fit: contain;
+    flex-shrink: 0;
+    display: none;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+  }
+  .team-logo.show { display: block; }
+
+  .team-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    color: #fff;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    white-space: nowrap;
+    line-height: 1;
+  }
+  .team-name.full-mode { font-size: 22px; letter-spacing: 1px; }
+
+  #score-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #1a1a2e;
+    min-width: 130px;
+    padding: 0 6px;
+    position: relative;
+    z-index: 2;
+  }
+
+  #score-display {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 42px;
+    color: #fff;
+    letter-spacing: 6px;
+    line-height: 1;
+  }
+  .score-sep { color: rgba(255,255,255,0.4); margin: 0 2px; }
+
+  #timer-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: -2px;
+  }
+  #timer-display {
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    color: rgba(255,255,255,0.75);
+    letter-spacing: 2px;
+  }
+  #extra-time-badge {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: #ffcc00;
+    background: rgba(255,200,0,0.15);
+    padding: 1px 5px;
+    border-radius: 3px;
+    display: none;
+  }
+  #extra-time-badge.show { display: inline-block; }
+
+  #period-badge {
+    position: absolute;
+    top: -1px; left: 50%;
+    transform: translateX(-50%);
+    background: #e8c438;
+    color: #1a1a2e;
+    font-family: 'Oswald', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 8px;
+    letter-spacing: 2px;
+    border-radius: 0 0 4px 4px;
+    display: none;
+  }
+  #period-badge.show { display: block; }
+
+  .cards-strip { display: flex; align-items: center; gap: 3px; padding: 0 4px; }
+  .card-icon { width: 12px; height: 16px; border-radius: 2px; display: inline-block; }
+  .card-icon.yellow { background: #f5c518; }
+  .card-icon.red { background: #e53935; }
+
+  #info-bar {
+    position: absolute; bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 560px;
+    background: rgba(20,20,40,0.92);
+    color: #fff;
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    padding: 3px 16px;
+    text-align: center;
+    border-radius: 0 0 6px 6px;
+    display: none;
+  }
+  #info-bar.show { display: block; }
+
+  /* Animação de Gol */
+  #goal-flash {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none; opacity: 0; background: rgba(0,0,0,0.75); z-index: 10;
+  }
+  #goal-flash.animate { animation: goalPulse 1.8s ease-out forwards; }
+  #goal-flash-text {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 100px; color: #ffcc00; letter-spacing: 10px;
+    text-shadow: 0 0 30px rgba(255,204,0,0.8);
+  }
+  @keyframes goalPulse {
+    0% { opacity: 0; transform: scale(0.6); }
+    25% { opacity: 1; transform: scale(1.1); }
+    50% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.05); }
+  }
+</style>
+</head>
+<body>
+
+<div id="goal-flash"><div id="goal-flash-text">GOOOOL!</div></div>
+
+<div id="scoreboard">
+  <div class="team-block" id="team-a-block">
+    <div class="cards-strip" id="cards-a"></div>
+    <span class="team-name" id="team-a-name">FLA</span>
+    <img class="team-logo" id="logo-a" src="" alt="Logo A">
+  </div>
+
+  <div id="score-center">
+    <div id="period-badge">1º TEMPO</div>
+    <div id="score-display">
+      <span id="score-a">0</span><span class="score-sep">×</span><span id="score-b">0</span>
+    </div>
+    <div id="timer-row">
+      <span id="timer-display">00:00</span>
+      <span id="extra-time-badge">+0'</span>
+    </div>
+  </div>
+
+  <div class="team-block" id="team-b-block">
+    <img class="team-logo" id="logo-b" src="" alt="Logo B">
+    <span class="team-name" id="team-b-name">VAS</span>
+    <div class="cards-strip" id="cards-b"></div>
+  </div>
+</div>
+
+<div id="info-bar"></div>
+
+<script>
+const bc = new BroadcastChannel('football_scoreboard');
+
+bc.onmessage = (e) => {
+  const { type, data } = e.data;
+  if (type === 'state') applyState(data);
+  if (type === 'goal') triggerGoalAnim();
+};
+
+function applyState(s) {
+  document.getElementById('scoreboard').classList.toggle('visible', s.visible);
+  document.getElementById('team-a-block').style.background = s.teamA.color;
+  document.getElementById('team-b-block').style.background = s.teamB.color;
+
+  document.getElementById('team-a-name').textContent = s.fullMode ? s.teamA.name : s.teamA.abbr;
+  document.getElementById('team-b-name').textContent = s.fullMode ? s.teamB.name : s.teamB.abbr;
+  
+  const logoA = document.getElementById('logo-a');
+  const logoB = document.getElementById('logo-b');
+  if (s.fullMode && s.teamA.logo) { logoA.src = s.teamA.logo; logoA.classList.add('show'); } else { logoA.classList.remove('show'); }
+  if (s.fullMode && s.teamB.logo) { logoB.src = s.teamB.logo; logoB.classList.add('show'); } else { logoB.classList.remove('show'); }
+
+  document.getElementById('score-a').textContent = s.scoreA;
+  document.getElementById('score-b').textContent = s.scoreB;
+
+  let m = Math.floor(s.timerSeconds / 60);
+  let sec = s.timerSeconds % 60;
+  document.getElementById('timer-display').textContent = String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
+
+  const et = document.getElementById('extra-time-badge');
+  if (s.extraTime > 0) { et.textContent = '+' + s.extraTime + "'"; et.classList.add('show'); } else { et.classList.remove('show'); }
+
+  const pb = document.getElementById('period-badge');
+  pb.textContent = s.period;
+  pb.classList.toggle('show', s.showPeriod);
+
+  renderCards('a', s.teamA.cards);
+  renderCards('b', s.teamB.cards);
+
+  const ib = document.getElementById('info-bar');
+  ib.textContent = s.info;
+  ib.classList.toggle('show', s.showInfo && s.info.length > 0);
+}
+
+function renderCards(team, cards) {
+  const strip = document.getElementById('cards-' + team);
+  strip.innerHTML = '';
+  for (let i = 0; i < cards.yellow; i++) {
+    let c = document.createElement('div'); c.className = 'card-icon yellow'; strip.appendChild(c);
+  }
+  for (let i = 0; i < cards.red; i++) {
+    let c = document.createElement('div'); c.className = 'card-icon red'; strip.appendChild(c);
+  }
+}
+
+function triggerGoalAnim() {
+  const flash = document.getElementById('goal-flash');
+  flash.classList.remove('animate');
+  void flash.offsetWidth;
+  flash.classList.add('animate');
+}
+</script>
+</body>
+</html>
