@@ -171,7 +171,6 @@
 </div>
 
 <script>
-// Credenciais embutidas diretamente no código para o repositório ggfcheats/Dados-gay
 const GITHUB_OWNER = "ggfcheats";
 const GITHUB_REPO = "Dados-gay";
 const GITHUB_TOKEN = "Github_pat_11BRE3BEA0S1kENeVC8wHE_WX91hcEbEc6kYcOYQ6IM6046Hwi5218QWEXOJtTT4qFC3G4PNJJTg2fM1lm";
@@ -223,16 +222,27 @@ async function syncToGitHub() {
   const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${FILE_PATH}`;
 
   try {
-    let sha = '';
+    let sha = null;
     const getRes = await fetch(url, {
       headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
     });
+    
     if (getRes.ok) {
       const fileData = await getRes.json();
       sha = fileData.sha;
     }
 
-    const contentEncoded = btoa(unescape(encodeURIComponent(JSON.stringify(state, null, 2))));
+    const jsonString = JSON.stringify(state, null, 2);
+    const contentEncoded = btoa(unescape(encodeURIComponent(jsonString)));
+
+    const bodyData = {
+      message: 'Atualização do Placar via Painel GGF',
+      content: contentEncoded
+    };
+    
+    if (sha) {
+      bodyData.sha = sha;
+    }
 
     const putRes = await fetch(url, {
       method: 'PUT',
@@ -240,17 +250,15 @@ async function syncToGitHub() {
         'Authorization': `token ${GITHUB_TOKEN}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        message: 'Atualização do Placar via Painel GGF',
-        content: contentEncoded,
-        sha: sha ? sha : undefined
-      })
+      body: JSON.stringify(bodyData)
     });
 
     if (putRes.ok) {
       document.getElementById('sync-status').textContent = '✅ Sincronizado com o GitHub!';
     } else {
-      document.getElementById('sync-status').textContent = '❌ Erro ao salvar no GitHub.';
+      const errJson = await putRes.json();
+      console.error("Erro do GitHub:", errJson);
+      document.getElementById('sync-status').textContent = `❌ Erro: ${errJson.message || 'Falha ao salvar'}`;
     }
   } catch (err) {
     console.error(err);
