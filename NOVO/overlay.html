@@ -197,9 +197,9 @@
 <div id="info-bar"></div>
 
 <script>
-// CONFIGURAÇÕES DO REPOSITÓRIO ONDE O ARQUIVO JSON VICA SALVO
-const GITHUB_OWNER = "SEU_USUARIO_AQUI"; 
-const GITHUB_REPO = "SEU_REPOSITORIO_AQUI";
+// Configurações embutidas apontando diretamente para o repositório ggfcheats/Dados-gay
+const GITHUB_OWNER = "ggfcheats";
+const GITHUB_REPO = "Dados-gay";
 const FILE_PATH = "estado-placar.json";
 
 let ultimoGolTrigger = 0;
@@ -251,7 +251,6 @@ function applyState(s) {
   ib.textContent = s.info;
   ib.classList.toggle('show', s.showInfo && s.info.length > 0);
 
-  // Detectar disparo de gol remoto via timestamp
   if (s.goalTrigger && s.goalTrigger > ultimoGolTrigger) {
     ultimoGolTrigger = s.goalTrigger;
     triggerGoalAnim();
@@ -276,7 +275,6 @@ function triggerGoalAnim() {
   flash.classList.add('animate');
 }
 
-// Atualiza a cada 2 segundos puxando direto do GitHub
 setInterval(buscarEstadoDoGitHub, 2000);
 buscarEstadoDoGitHub();
 </script>
