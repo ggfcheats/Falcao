@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Painel de Controle — Placar</title>
+<title>Painel de Controle — GitHub Sync</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;900&family=Oswald:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -37,23 +37,43 @@
   .slider::before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: var(--muted); border-radius: 50%; transition: 0.2s; }
   input:checked + .slider { background: var(--accent); border-color: var(--accent); }
   input:checked + .slider::before { transform: translateX(22px); background: #111; }
+  #sync-status { font-size: 12px; color: var(--yellow); }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>⚽ Painel de Controle GGF</h1>
-  <span style="font-size:12px; color:var(--green)">● Sincronizado</span>
+  <h1>⚽ Painel GGF — GitHub Sync</h1>
+  <span id="sync-status">Aguardando alteração...</span>
 </header>
 
-<!-- Visibilidade Principal -->
+<!-- Configurações do GitHub -->
+<div class="card" style="border-color: var(--accent);">
+  <div class="card-title">Configuração da API do GitHub</div>
+  <div class="grid" style="grid-template-columns: 1fr 1fr 1fr;">
+    <div>
+      <label>Usuário / Owner</label>
+      <input type="text" id="gh-owner" placeholder="Ex: seu-usuario">
+    </div>
+    <div>
+      <label>Nome do Repositório</label>
+      <input type="text" id="gh-repo" placeholder="Ex: placar-obs">
+    </div>
+    <div>
+      <label>GitHub Token (PAT)</label>
+      <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxx">
+    </div>
+  </div>
+  <button class="btn btn-accent btn-sm" onclick="salvarConfigGH()">Salvar Credenciais Localmente</button>
+</div>
+
 <div class="master-vis">
   <div>
     <strong>STATUS NO OBS</strong>
     <div style="font-size:11px; color:var(--muted)">Ligar ou ocultar o placar na transmissão</div>
   </div>
   <label class="switch">
-    <input type="checkbox" id="chk-visible" onchange="sync()">
+    <input type="checkbox" id="chk-visible" onchange="syncToGitHub()">
     <span class="slider"></span>
   </label>
 </div>
@@ -63,7 +83,7 @@
   <div style="display:flex; justify-content:space-between; align-items:center;">
     <span>Exibir Nomes Completos e Escudos (Modo Completo)</span>
     <label class="switch">
-      <input type="checkbox" id="chk-fullmode" onchange="sync()">
+      <input type="checkbox" id="chk-fullmode" onchange="syncToGitHub()">
       <span class="slider"></span>
     </label>
   </div>
@@ -74,13 +94,13 @@
   <div class="card">
     <div class="card-title">Time Mandante (Casa)</div>
     <label>Nome Completo</label>
-    <input type="text" id="a-name" value="FLAMENGO" oninput="sync()">
+    <input type="text" id="a-name" value="FLAMENGO" oninput="syncToGitHub()">
     <label>Abreviação (Sigla)</label>
-    <input type="text" id="a-abbr" value="FLA" maxlength="4" oninput="sync()">
+    <input type="text" id="a-abbr" value="FLA" maxlength="4" oninput="syncToGitHub()">
     <label>Cor de Fundo</label>
-    <input type="color" id="a-color" value="#c0392b" oninput="sync()">
+    <input type="color" id="a-color" value="#c0392b" oninput="syncToGitHub()">
     <label>URL do Escudo (Logo)</label>
-    <input type="text" id="a-logo" placeholder="https://exemplo.com/escudo.png" oninput="sync()">
+    <input type="text" id="a-logo" placeholder="https://exemplo.com/escudo.png" oninput="syncToGitHub()">
     <div style="display:flex; gap:6px; margin-top:10px;">
       <button class="btn btn-green" style="flex:1" onclick="adjustScore('a', 1)">+ Gol Casa</button>
       <button class="btn btn-red" onclick="adjustScore('a', -1)">-</button>
@@ -96,13 +116,13 @@
   <div class="card">
     <div class="card-title">Time Visitante (Fora)</div>
     <label>Nome Completo</label>
-    <input type="text" id="b-name" value="VASCO DA GAMA" oninput="sync()">
+    <input type="text" id="b-name" value="VASCO DA GAMA" oninput="syncToGitHub()">
     <label>Abreviação (Sigla)</label>
-    <input type="text" id="b-abbr" value="VAS" maxlength="4" oninput="sync()">
+    <input type="text" id="b-abbr" value="VAS" maxlength="4" oninput="syncToGitHub()">
     <label>Cor de Fundo</label>
-    <input type="color" id="b-color" value="#1565c0" oninput="sync()">
+    <input type="color" id="b-color" value="#1565c0" oninput="syncToGitHub()">
     <label>URL do Escudo (Logo)</label>
-    <input type="text" id="b-logo" placeholder="https://exemplo.com/escudo.png" oninput="sync()">
+    <input type="text" id="b-logo" placeholder="https://exemplo.com/escudo.png" oninput="syncToGitHub()">
     <div style="display:flex; gap:6px; margin-top:10px;">
       <button class="btn btn-green" style="flex:1" onclick="adjustScore('b', 1)">+ Gol Fora</button>
       <button class="btn btn-red" onclick="adjustScore('b', -1)">-</button>
@@ -116,7 +136,6 @@
 </div>
 
 <div class="grid">
-  <!-- Placar Geral & Gols -->
   <div class="card">
     <div class="card-title">Placar & Animações</div>
     <div style="display:flex; justify-content:space-around; align-items:center; margin-bottom:10px;">
@@ -133,7 +152,6 @@
     <button class="btn btn-accent btn-full" onclick="triggerGoal()">⚡ DISPARAR ANIMAÇÃO DE GOL!</button>
   </div>
 
-  <!-- Cronômetro e Período -->
   <div class="card">
     <div class="card-title">Cronômetro & Período</div>
     <div class="timer-display" id="ctrl-timer-display">00:00</div>
@@ -144,7 +162,7 @@
     <div style="display:flex; gap:10px;">
       <div style="flex:1">
         <label>Período</label>
-        <select id="sel-period" onchange="sync()">
+        <select id="sel-period" onchange="syncToGitHub()">
           <option>1º TEMPO</option>
           <option>INTERVALO</option>
           <option>2º TEMPO</option>
@@ -155,26 +173,35 @@
       </div>
       <div style="width:100px">
         <label>Exibir Período</label>
-        <input type="checkbox" id="chk-show-period" onchange="sync()" style="width:20px; height:20px;">
+        <input type="checkbox" id="chk-show-period" onchange="syncToGitHub()" style="width:20px; height:20px;">
       </div>
     </div>
     <label>Acréscimo (Minutos extras)</label>
-    <input type="number" id="num-extratime" value="0" min="0" max="15" oninput="sync()">
+    <input type="number" id="num-extratime" value="0" min="0" max="15" oninput="syncToGitHub()">
   </div>
 </div>
 
-<!-- Rodapé / Informação Ticker -->
 <div class="card">
   <div class="card-title">Barra de Informação (Ticker)</div>
-  <input type="text" id="inp-info" value="Campeonato Municipal - Rodada Final" oninput="sync()">
+  <input type="text" id="inp-info" value="Campeonato Municipal - Rodada Final" oninput="syncToGitHub()">
   <div style="display:flex; align-items:center; gap:8px;">
-    <input type="checkbox" id="chk-show-info" onchange="sync()" style="width:20px; height:20px;">
+    <input type="checkbox" id="chk-show-info" onchange="syncToGitHub()" style="width:20px; height:20px;">
     <label for="chk-show-info" style="margin:0; color:var(--text)">Mostrar barra de informações no OBS</label>
   </div>
 </div>
 
 <script>
-const bc = new BroadcastChannel('football_scoreboard');
+// Carregar credenciais salvas se houver
+document.getElementById('gh-owner').value = localStorage.getItem('gh_owner') || '';
+document.getElementById('gh-repo').value = localStorage.getItem('gh_repo') || '';
+document.getElementById('gh-token').value = localStorage.getItem('gh_token') || '';
+
+function salvarConfigGH() {
+  localStorage.setItem('gh_owner', document.getElementById('gh-owner').value);
+  localStorage.setItem('gh_repo', document.getElementById('gh-repo').value);
+  localStorage.setItem('gh_token', document.getElementById('gh-token').value);
+  alert('Credenciais salvas com sucesso no navegador!');
+}
 
 let state = {
   visible: false,
@@ -188,16 +215,25 @@ let state = {
   extraTime: 0,
   info: '',
   showInfo: false,
+  goalTrigger: 0,
   teamA: { name: 'FLAMENGO', abbr: 'FLA', color: '#c0392b', logo: '', cards: { yellow: 0, red: 0 } },
   teamB: { name: 'VASCO DA GAMA', abbr: 'VAS', color: '#1565c0', logo: '', cards: { yellow: 0, red: 0 } }
 };
 
 let timerInterval = null;
 
-function sync() {
+async function syncToGitHub() {
+  const owner = document.getElementById('gh-owner').value;
+  const repo = document.getElementById('gh-repo').value;
+  const token = document.getElementById('gh-token').value;
+
+  if (!owner || !repo || !token) {
+    document.getElementById('sync-status').textContent = '⚠️ Preencha as credenciais do GitHub acima!';
+    return;
+  }
+
   state.visible = document.getElementById('chk-visible').checked;
   state.fullMode = document.getElementById('chk-fullmode').checked;
-  
   state.teamA.name = document.getElementById('a-name').value;
   state.teamA.abbr = document.getElementById('a-abbr').value;
   state.teamA.color = document.getElementById('a-color').value;
@@ -211,36 +247,76 @@ function sync() {
   state.period = document.getElementById('sel-period').value;
   state.showPeriod = document.getElementById('chk-show-period').checked;
   state.extraTime = parseInt(document.getElementById('num-extratime').value) || 0;
-  
   state.info = document.getElementById('inp-info').value;
   state.showInfo = document.getElementById('chk-show-info').checked;
 
   document.getElementById('disp-score-a').textContent = state.scoreA;
   document.getElementById('disp-score-b').textContent = state.scoreB;
 
-  bc.postMessage({ type: 'state', data: state });
+  document.getElementById('sync-status').textContent = '🔄 Salvando no GitHub...';
+
+  const path = 'estado-placar.json';
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+
+  try {
+    // 1. Precisamos pegar o SHA atual do arquivo (exigência da API do GitHub para updates)
+    let sha = '';
+    const getRes = await fetch(url, {
+      headers: { 'Authorization': `token ${token}` }
+    });
+    if (getRes.ok) {
+      const fileData = await getRes.json();
+      sha = fileData.sha;
+    }
+
+    // 2. Enviar o novo JSON codificado em Base64
+    const contentEncoded = btoa(unescape(encodeURIComponent(JSON.stringify(state, null, 2))));
+
+    const putRes = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `token ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        message: 'Atualização do Placar via Painel GGF',
+        content: contentEncoded,
+        sha: sha ? sha : undefined
+      })
+    });
+
+    if (putRes.ok) {
+      document.getElementById('sync-status').textContent = '✅ Sincronizado com o GitHub!';
+    } else {
+      document.getElementById('sync-status').textContent = '❌ Erro ao salvar no GitHub.';
+    }
+  } catch (err) {
+    console.error(err);
+    document.getElementById('sync-status').textContent = '❌ Erro de conexão com a API.';
+  }
 }
 
 function adjustScore(team, val) {
   if (team === 'a') state.scoreA = Math.max(0, state.scoreA + val);
   if (team === 'b') state.scoreB = Math.max(0, state.scoreB + val);
-  sync();
+  syncToGitHub();
 }
 
 function triggerGoal() {
-  bc.postMessage({ type: 'goal' });
+  state.goalTrigger = Date.now(); // Atualiza timestamp para disparar animação remota
+  syncToGitHub();
 }
 
 function addCard(team, type) {
   if (team === 'a') state.teamA.cards[type]++;
   if (team === 'b') state.teamB.cards[type]++;
-  sync();
+  syncToGitHub();
 }
 
 function clearCards(team) {
   if (team === 'a') state.teamA.cards = { yellow: 0, red: 0 };
   if (team === 'b') state.teamB.cards = { yellow: 0, red: 0 };
-  sync();
+  syncToGitHub();
 }
 
 function toggleTimer() {
@@ -253,7 +329,7 @@ function toggleTimer() {
       timerInterval = setInterval(() => {
         state.timerSeconds++;
         updateTimerUI();
-        sync();
+        syncToGitHub();
       }, 1000);
     }
   } else {
@@ -262,7 +338,7 @@ function toggleTimer() {
     clearInterval(timerInterval);
     timerInterval = null;
   }
-  sync();
+  syncToGitHub();
 }
 
 function resetTimer() {
@@ -273,7 +349,7 @@ function resetTimer() {
   document.getElementById('btn-timer-toggle').textContent = '▶ Iniciar';
   document.getElementById('btn-timer-toggle').className = 'btn btn-green btn-full';
   updateTimerUI();
-  sync();
+  syncToGitHub();
 }
 
 function updateTimerUI() {
@@ -282,9 +358,6 @@ function updateTimerUI() {
   document.getElementById('ctrl-timer-display').textContent = 
     String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
 }
-
-updateTimerUI();
-sync();
 </script>
 </body>
 </html>
