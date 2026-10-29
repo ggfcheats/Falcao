@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel de Controle — Placar</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;900&family=Oswald:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d18; --bg2: #13131f; --bg3: #1a1a2e; --border: rgba(255,255,255,0.08);
+    --accent: #e8c438; --text: #e8e8f0; --muted: rgba(232,232,240,0.45);
+    --green: #43a047; --red: #e53935; --yellow: #f5c518;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'Barlow Condensed', sans-serif; padding: 20px; }
+  header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+  header h1 { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--accent); letter-spacing: 2px; }
+  .grid { display: grid; gap: 16px; grid-template-columns: 1fr 1fr; }
+  @media(max-width:768px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .card-title { font-family: 'Oswald', sans-serif; font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; letter-spacing: 2px; }
+  label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
+  input, select, textarea { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 8px; font-size: 14px; margin-bottom: 10px; }
+  input[type=color] { width: 40px; height: 32px; padding: 0; cursor: pointer; border: none; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 14px; border-radius: 6px; border: none; font-family: 'Oswald', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; text-transform: uppercase; }
+  .btn-accent { background: var(--accent); color: #111; }
+  .btn-green { background: var(--green); color: #fff; }
+  .btn-red { background: var(--red); color: #fff; }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-full { width: 100%; }
+  .master-vis { display: flex; justify-content: space-between; align-items: center; background: var(--bg3); border-radius: 8px; padding: 12px 16px; border: 1px solid var(--border); margin-bottom: 16px; }
+  .score-val { font-family: 'Bebas Neue', sans-serif; font-size: 40px; color: var(--accent); text-align: center; }
+  .timer-display { font-family: 'Bebas Neue', sans-serif; font-size: 44px; text-align: center; letter-spacing: 4px; margin: 6px 0; }
+  .switch { position: relative; width: 48px; height: 26px; display: inline-block; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; inset: 0; background: var(--bg3); border-radius: 26px; border: 1px solid var(--border); cursor: pointer; transition: 0.2s; }
+  .slider::before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: var(--muted); border-radius: 50%; transition: 0.2s; }
+  input:checked + .slider { background: var(--accent); border-color: var(--accent); }
+  input:checked + .slider::before { transform: translateX(22px); background: #111; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚽ Painel de Controle GGF</h1>
+  <span style="font-size:12px; color:var(--green)">● Sincronizado</span>
+</header>
+
+<!-- Visibilidade Principal -->
+<div class="master-vis">
+  <div>
+    <strong>STATUS NO OBS</strong>
+    <div style="font-size:11px; color:var(--muted)">Ligar ou ocultar o placar na transmissão</div>
+  </div>
+  <label class="switch">
+    <input type="checkbox" id="chk-visible" onchange="sync()">
+    <span class="slider"></span>
+  </label>
+</div>
+
+<div class="card">
+  <div class="card-title">Modo de Exibição</div>
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <span>Exibir Nomes Completos e Escudos (Modo Completo)</span>
+    <label class="switch">
+      <input type="checkbox" id="chk-fullmode" onchange="sync()">
+      <span class="slider"></span>
+    </label>
+  </div>
+</div>
+
+<div class="grid">
+  <!-- Time A -->
+  <div class="card">
+    <div class="card-title">Time Mandante (Casa)</div>
+    <label>Nome Completo</label>
+    <input type="text" id="a-name" value="FLAMENGO" oninput="sync()">
+    <label>Abreviação (Sigla)</label>
+    <input type="text" id="a-abbr" value="FLA" maxlength="4" oninput="sync()">
+    <label>Cor de Fundo</label>
+    <input type="color" id="a-color" value="#c0392b" oninput="sync()">
+    <label>URL do Escudo (Logo)</label>
+    <input type="text" id="a-logo" placeholder="https://exemplo.com/escudo.png" oninput="sync()">
+    <div style="display:flex; gap:6px; margin-top:10px;">
+      <button class="btn btn-green" style="flex:1" onclick="adjustScore('a', 1)">+ Gol Casa</button>
+      <button class="btn btn-red" onclick="adjustScore('a', -1)">-</button>
+    </div>
+    <div style="display:flex; gap:6px; margin-top:6px;">
+      <button class="btn btn-ghost btn-full" onclick="addCard('a', 'yellow')">+ 🟨 Amarelo</button>
+      <button class="btn btn-ghost btn-full" onclick="addCard('a', 'red')">+ 🟥 Vermelho</button>
+      <button class="btn btn-ghost" onclick="clearCards('a')">Limpar</button>
+    </div>
+  </div>
+
+  <!-- Time B -->
+  <div class="card">
+    <div class="card-title">Time Visitante (Fora)</div>
+    <label>Nome Completo</label>
+    <input type="text" id="b-name" value="VASCO DA GAMA" oninput="sync()">
+    <label>Abreviação (Sigla)</label>
+    <input type="text" id="b-abbr" value="VAS" maxlength="4" oninput="sync()">
+    <label>Cor de Fundo</label>
+    <input type="color" id="b-color" value="#1565c0" oninput="sync()">
+    <label>URL do Escudo (Logo)</label>
+    <input type="text" id="b-logo" placeholder="https://exemplo.com/escudo.png" oninput="sync()">
+    <div style="display:flex; gap:6px; margin-top:10px;">
+      <button class="btn btn-green" style="flex:1" onclick="adjustScore('b', 1)">+ Gol Fora</button>
+      <button class="btn btn-red" onclick="adjustScore('b', -1)">-</button>
+    </div>
+    <div style="display:flex; gap:6px; margin-top:6px;">
+      <button class="btn btn-ghost btn-full" onclick="addCard('b', 'yellow')">+ 🟨 Amarelo</button>
+      <button class="btn btn-ghost btn-full" onclick="addCard('b', 'red')">+ 🟥 Vermelho</button>
+      <button class="btn btn-ghost" onclick="clearCards('b')">Limpar</button>
+    </div>
+  </div>
+</div>
+
+<div class="grid">
+  <!-- Placar Geral & Gols -->
+  <div class="card">
+    <div class="card-title">Placar & Animações</div>
+    <div style="display:flex; justify-content:space-around; align-items:center; margin-bottom:10px;">
+      <div>
+        <small style="color:var(--muted)">CASA</small>
+        <div class="score-val" id="disp-score-a">0</div>
+      </div>
+      <div style="font-size:24px; color:var(--muted)">×</div>
+      <div>
+        <small style="color:var(--muted)">FORA</small>
+        <div class="score-val" id="disp-score-b">0</div>
+      </div>
+    </div>
+    <button class="btn btn-accent btn-full" onclick="triggerGoal()">⚡ DISPARAR ANIMAÇÃO DE GOL!</button>
+  </div>
+
+  <!-- Cronômetro e Período -->
+  <div class="card">
+    <div class="card-title">Cronômetro & Período</div>
+    <div class="timer-display" id="ctrl-timer-display">00:00</div>
+    <div style="display:flex; gap:6px; margin-bottom:10px;">
+      <button class="btn btn-green btn-full" id="btn-timer-toggle" onclick="toggleTimer()">▶ Iniciar</button>
+      <button class="btn btn-red" onclick="resetTimer()">↺ Zera</button>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <div style="flex:1">
+        <label>Período</label>
+        <select id="sel-period" onchange="sync()">
+          <option>1º TEMPO</option>
+          <option>INTERVALO</option>
+          <option>2º TEMPO</option>
+          <option>PRORROGAÇÃO</option>
+          <option>PÊNALTIS</option>
+          <option>ENCERRADO</option>
+        </select>
+      </div>
+      <div style="width:100px">
+        <label>Exibir Período</label>
+        <input type="checkbox" id="chk-show-period" onchange="sync()" style="width:20px; height:20px;">
+      </div>
+    </div>
+    <label>Acréscimo (Minutos extras)</label>
+    <input type="number" id="num-extratime" value="0" min="0" max="15" oninput="sync()">
+  </div>
+</div>
+
+<!-- Rodapé / Informação Ticker -->
+<div class="card">
+  <div class="card-title">Barra de Informação (Ticker)</div>
+  <input type="text" id="inp-info" value="Campeonato Municipal - Rodada Final" oninput="sync()">
+  <div style="display:flex; align-items:center; gap:8px;">
+    <input type="checkbox" id="chk-show-info" onchange="sync()" style="width:20px; height:20px;">
+    <label for="chk-show-info" style="margin:0; color:var(--text)">Mostrar barra de informações no OBS</label>
+  </div>
+</div>
+
+<script>
+const bc = new BroadcastChannel('football_scoreboard');
+
+let state = {
+  visible: false,
+  fullMode: false,
+  scoreA: 0,
+  scoreB: 0,
+  timerSeconds: 0,
+  timerRunning: false,
+  period: '1º TEMPO',
+  showPeriod: false,
+  extraTime: 0,
+  info: '',
+  showInfo: false,
+  teamA: { name: 'FLAMENGO', abbr: 'FLA', color: '#c0392b', logo: '', cards: { yellow: 0, red: 0 } },
+  teamB: { name: 'VASCO DA GAMA', abbr: 'VAS', color: '#1565c0', logo: '', cards: { yellow: 0, red: 0 } }
+};
+
+let timerInterval = null;
+
+function sync() {
+  state.visible = document.getElementById('chk-visible').checked;
+  state.fullMode = document.getElementById('chk-fullmode').checked;
+  
+  state.teamA.name = document.getElementById('a-name').value;
+  state.teamA.abbr = document.getElementById('a-abbr').value;
+  state.teamA.color = document.getElementById('a-color').value;
+  state.teamA.logo = document.getElementById('a-logo').value;
+
+  state.teamB.name = document.getElementById('b-name').value;
+  state.teamB.abbr = document.getElementById('b-abbr').value;
+  state.teamB.color = document.getElementById('b-color').value;
+  state.teamB.logo = document.getElementById('b-logo').value;
+
+  state.period = document.getElementById('sel-period').value;
+  state.showPeriod = document.getElementById('chk-show-period').checked;
+  state.extraTime = parseInt(document.getElementById('num-extratime').value) || 0;
+  
+  state.info = document.getElementById('inp-info').value;
+  state.showInfo = document.getElementById('chk-show-info').checked;
+
+  document.getElementById('disp-score-a').textContent = state.scoreA;
+  document.getElementById('disp-score-b').textContent = state.scoreB;
+
+  bc.postMessage({ type: 'state', data: state });
+}
+
+function adjustScore(team, val) {
+  if (team === 'a') state.scoreA = Math.max(0, state.scoreA + val);
+  if (team === 'b') state.scoreB = Math.max(0, state.scoreB + val);
+  sync();
+}
+
+function triggerGoal() {
+  bc.postMessage({ type: 'goal' });
+}
+
+function addCard(team, type) {
+  if (team === 'a') state.teamA.cards[type]++;
+  if (team === 'b') state.teamB.cards[type]++;
+  sync();
+}
+
+function clearCards(team) {
+  if (team === 'a') state.teamA.cards = { yellow: 0, red: 0 };
+  if (team === 'b') state.teamB.cards = { yellow: 0, red: 0 };
+  sync();
+}
+
+function toggleTimer() {
+  state.timerRunning = !state.timerRunning;
+  const btn = document.getElementById('btn-timer-toggle');
+  if (state.timerRunning) {
+    btn.textContent = '⏸ Pausar';
+    btn.className = 'btn btn-accent btn-full';
+    if (!timerInterval) {
+      timerInterval = setInterval(() => {
+        state.timerSeconds++;
+        updateTimerUI();
+        sync();
+      }, 1000);
+    }
+  } else {
+    btn.textContent = '▶ Continuar';
+    btn.className = 'btn btn-green btn-full';
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+  sync();
+}
+
+function resetTimer() {
+  state.timerRunning = false;
+  clearInterval(timerInterval);
+  timerInterval = null;
+  state.timerSeconds = 0;
+  document.getElementById('btn-timer-toggle').textContent = '▶ Iniciar';
+  document.getElementById('btn-timer-toggle').className = 'btn btn-green btn-full';
+  updateTimerUI();
+  sync();
+}
+
+function updateTimerUI() {
+  let m = Math.floor(state.timerSeconds / 60);
+  let sec = state.timerSeconds % 60;
+  document.getElementById('ctrl-timer-display').textContent = 
+    String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
+}
+
+updateTimerUI();
+sync();
+</script>
+</body>
+</html>
