@@ -44,28 +44,8 @@
 
 <header>
   <h1>⚽ Painel GGF — GitHub Sync</h1>
-  <span id="sync-status">Aguardando alteração...</span>
+  <span id="sync-status">Conectado ao repositório ggfcheats/Dados-gay</span>
 </header>
-
-<!-- Configurações do GitHub -->
-<div class="card" style="border-color: var(--accent);">
-  <div class="card-title">Configuração da API do GitHub</div>
-  <div class="grid" style="grid-template-columns: 1fr 1fr 1fr;">
-    <div>
-      <label>Usuário / Owner</label>
-      <input type="text" id="gh-owner" placeholder="Ex: seu-usuario">
-    </div>
-    <div>
-      <label>Nome do Repositório</label>
-      <input type="text" id="gh-repo" placeholder="Ex: placar-obs">
-    </div>
-    <div>
-      <label>GitHub Token (PAT)</label>
-      <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxx">
-    </div>
-  </div>
-  <button class="btn btn-accent btn-sm" onclick="salvarConfigGH()">Salvar Credenciais Localmente</button>
-</div>
 
 <div class="master-vis">
   <div>
@@ -191,17 +171,11 @@
 </div>
 
 <script>
-// Carregar credenciais salvas se houver
-document.getElementById('gh-owner').value = localStorage.getItem('gh_owner') || '';
-document.getElementById('gh-repo').value = localStorage.getItem('gh_repo') || '';
-document.getElementById('gh-token').value = localStorage.getItem('gh_token') || '';
-
-function salvarConfigGH() {
-  localStorage.setItem('gh_owner', document.getElementById('gh-owner').value);
-  localStorage.setItem('gh_repo', document.getElementById('gh-repo').value);
-  localStorage.setItem('gh_token', document.getElementById('gh-token').value);
-  alert('Credenciais salvas com sucesso no navegador!');
-}
+// Credenciais embutidas diretamente no código para o repositório ggfcheats/Dados-gay
+const GITHUB_OWNER = "ggfcheats";
+const GITHUB_REPO = "Dados-gay";
+const GITHUB_TOKEN = "Github_pat_11BRE3BEA0S1kENeVC8wHE_WX91hcEbEc6kYcOYQ6IM6046Hwi5218QWEXOJtTT4qFC3G4PNJJTg2fM1lm";
+const FILE_PATH = "estado-placar.json";
 
 let state = {
   visible: false,
@@ -223,15 +197,6 @@ let state = {
 let timerInterval = null;
 
 async function syncToGitHub() {
-  const owner = document.getElementById('gh-owner').value;
-  const repo = document.getElementById('gh-repo').value;
-  const token = document.getElementById('gh-token').value;
-
-  if (!owner || !repo || !token) {
-    document.getElementById('sync-status').textContent = '⚠️ Preencha as credenciais do GitHub acima!';
-    return;
-  }
-
   state.visible = document.getElementById('chk-visible').checked;
   state.fullMode = document.getElementById('chk-fullmode').checked;
   state.teamA.name = document.getElementById('a-name').value;
@@ -255,27 +220,24 @@ async function syncToGitHub() {
 
   document.getElementById('sync-status').textContent = '🔄 Salvando no GitHub...';
 
-  const path = 'estado-placar.json';
-  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+  const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${FILE_PATH}`;
 
   try {
-    // 1. Precisamos pegar o SHA atual do arquivo (exigência da API do GitHub para updates)
     let sha = '';
     const getRes = await fetch(url, {
-      headers: { 'Authorization': `token ${token}` }
+      headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
     });
     if (getRes.ok) {
       const fileData = await getRes.json();
       sha = fileData.sha;
     }
 
-    // 2. Enviar o novo JSON codificado em Base64
     const contentEncoded = btoa(unescape(encodeURIComponent(JSON.stringify(state, null, 2))));
 
     const putRes = await fetch(url, {
       method: 'PUT',
       headers: {
-        'Authorization': `token ${token}`,
+        'Authorization': `token ${GITHUB_TOKEN}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -303,7 +265,7 @@ function adjustScore(team, val) {
 }
 
 function triggerGoal() {
-  state.goalTrigger = Date.now(); // Atualiza timestamp para disparar animação remota
+  state.goalTrigger = Date.now();
   syncToGitHub();
 }
 
