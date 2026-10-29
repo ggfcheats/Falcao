@@ -217,12 +217,14 @@ async function syncToGitHub() {
   document.getElementById('disp-score-a').textContent = state.scoreA;
   document.getElementById('disp-score-b').textContent = state.scoreB;
 
-  document.getElementById('sync-status').textContent = '🔄 Salvando no GitHub...';
+  document.getElementById('sync-status').textContent = '🔄 A guardar no GitHub...';
 
   const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${FILE_PATH}`;
 
   try {
     let sha = null;
+    
+    // Tenta buscar o ficheiro para obter o SHA atual (caso já exista)
     const getRes = await fetch(url, {
       headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
     });
@@ -236,10 +238,11 @@ async function syncToGitHub() {
     const contentEncoded = btoa(unescape(encodeURIComponent(jsonString)));
 
     const bodyData = {
-      message: 'Atualização do Placar via Painel GGF',
+      message: 'Criar ou atualizar estado do placar via Painel GGF',
       content: contentEncoded
     };
     
+    // Se o ficheiro já existir, o SHA é obrigatório para o GitHub aceitar o PUT
     if (sha) {
       bodyData.sha = sha;
     }
@@ -258,11 +261,11 @@ async function syncToGitHub() {
     } else {
       const errJson = await putRes.json();
       console.error("Erro do GitHub:", errJson);
-      document.getElementById('sync-status').textContent = `❌ Erro: ${errJson.message || 'Falha ao salvar'}`;
+      document.getElementById('sync-status').textContent = `❌ Erro: ${errJson.message || 'Falha ao guardar'}`;
     }
   } catch (err) {
     console.error(err);
-    document.getElementById('sync-status').textContent = '❌ Erro de conexão com a API.';
+    document.getElementById('sync-status').textContent = '❌ Erro de ligação à API.';
   }
 }
 
