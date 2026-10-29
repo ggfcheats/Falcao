@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel de Controle — Placar</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;900&family=Oswald:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d18;
+    --bg2: #13131f;
+    --bg3: #1a1a2e;
+    --bg4: #21213a;
+    --border: rgba(255,255,255,0.07);
+    --accent: #e8c438;
+    --accent2: #4fc3f7;
+    --text: #e8e8f0;
+    --muted: rgba(232,232,240,0.45);
+    --green: #43a047;
+    --red: #e53935;
+    --yellow: #f5c518;
+    --radius: 10px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow Condensed', sans-serif;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    letter-spacing: 4px;
+    color: var(--accent);
+  }
+  header .subtitle { font-size: 13px; color: var(--muted); letter-spacing: 1px; }
+
+  /* ── GRID ── */
+  .grid { display: grid; gap: 16px; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+  }
+  .card-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: var(--muted);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: inline-block;
+  }
+
+  /* ── FORM ELEMENTS ── */
+  label { font-size: 12px; color: var(--muted); letter-spacing: 1px; display: block; margin-bottom: 4px; }
+
+  input[type=text], input[type=number], input[type=url], textarea, select {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 15px;
+    padding: 8px 10px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+
+  input[type=color] {
+    width: 48px; height: 36px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    padding: 2px;
+    background: var(--bg3);
+  }
+
+  textarea { resize: vertical; min-height: 80px; line-height: 1.4; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 9px 18px;
+    border-radius: 7px;
+    border: none;
+    font-family: 'Oswald', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    transition: all 0.18s;
+    text-transform: uppercase;
+  }
+  .btn:active { transform: scale(0.96); }
+  .btn-accent { background: var(--accent); color: #111; }
+  .btn-accent:hover { background: #f0d060; }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-green { background: var(--green); color: #fff; }
+  .btn-green:hover { background: #4caf50; }
+  .btn-red { background: var(--red); color: #fff; }
+  .btn-red:hover { background: #ef5350; }
+  .btn-blue { background: #1565c0; color: #fff; }
+  .btn-blue:hover { background: #1976d2; }
+  .btn-sm { padding: 5px 12px; font-size: 12px; }
+  .btn-full { width: 100%; }
+  .btn-icon { padding: 8px 10px; font-size: 18px; min-width: 40px; }
+  .btn-warn { background: #f57f17; color: #fff; }
+
+  /* ── SCORE CONTROL ── */
+  .score-block {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+  .score-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 54px;
+    color: var(--accent);
+    min-width: 60px;
+    text-align: center;
+    line-height: 1;
+  }
+  .score-adj { display: flex; flex-direction: column; gap: 4px; }
+
+  /* ── TIMER CONTROL ── */
+  .timer-display {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 52px;
+    color: #fff;
+    letter-spacing: 6px;
+    text-align: center;
+    margin: 8px 0;
+  }
+  .timer-extra {
+    font-family: 'Oswald', sans-serif;
+    font-size: 14px;
+    color: var(--yellow);
+    text-align: center;
+    letter-spacing: 2px;
+    min-height: 20px;
+  }
+  .timer-btns { display: flex; gap: 8px; margin-top: 10px; }
+
+  /* ── TOGGLE SWITCH ── */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .toggle-row:last-child { border-bottom: none; }
+  .toggle-label { font-size: 14px; color: var(--text); }
+  .toggle-desc { font-size: 11px; color: var(--muted); }
+
+  .switch {
+    position: relative;
+    width: 52px; height: 28px;
+    flex-shrink: 0;
+  }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute;
+    inset: 0;
+    background: var(--bg4);
+    border-radius: 28px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .slider::before {
+    content: '';
+    position: absolute;
+    width: 20px; height: 20px;
+    left: 3px; top: 3px;
+    background: var(--muted);
+    border-radius: 50%;
+    transition: transform 0.2s, background 0.2s;
+  }
+  .switch input:checked + .slider { background: var(--accent); border-color: var(--accent); }
+  .switch input:checked + .slider::before { transform: translateX(24px); background: #111; }
+
+  /* ── CARDS CONTROL ── */
+  .cards-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .card-count {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    min-width: 32px;
+    text-align: center;
+  }
+  .card-icon {
+    width: 16px; height: 22px;
+    border-radius: 3px;
+    display: inline-block;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+  }
+  .card-icon.yellow { background: var(--yellow); }
+  .card-icon.red { background: var(--red); }
+
+  /* ── LOGO UPLOAD ── */
+  .logo-preview {
+    width: 60px; height: 60px;
+    object-fit: contain;
+    border-radius: 8px;
+    background: var(--bg3);
+    border: 1px dashed var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .logo-preview img { width: 100%; height: 100%; object-fit: contain; }
+  .logo-preview.empty::after { content: '🏟'; font-size: 24px; }
+  .logo-controls { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+
+  /* ── LINEUP ── */
+  .lineup-entry {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 5px;
+    align-items: center;
+  }
+  .lineup-entry input.num { width: 56px; flex-shrink: 0; }
+  .lineup-entry .del { padding: 6px 10px; font-size: 14px; line-height: 1; }
+  .lineup-list { max-height: 220px; overflow-y: auto; padding-right: 4px; }
+  .lineup-list::-webkit-scrollbar { width: 4px; }
+  .lineup-list::-webkit-scrollbar-track { background: transparent; }
+  .lineup-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* ── SEPARATOR ── */
+  .sep { height: 1px; background: var(--border); margin: 10px 0; }
+
+  /* ── PERIOD SELECT ── */
+  select option { background: #1a1a2e; }
+
+  /* ── BROADCAST STATUS ── */
+  .bc-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .bc-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+  }
+
+  /* ── VISIBILITY MASTER ── */
+  .master-vis {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg3);
+    border-radius: 8px;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .master-vis-label {
+    font-family: 'Oswald', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .master-vis-label.on { color: var(--green); }
+  .master-vis-label.off { color: var(--muted); }
+
+  /* ── FILE INPUT HIDDEN ── */
+  input[type=file] { display: none; }
+
+  /* ── GOAL BUTTON SPECIAL ── */
+  .btn-goal {
+    background: linear-gradient(135deg, #f5c518, #e8a000);
+    color: #111;
+    font-size: 16px;
+    letter-spacing: 3px;
+    padding: 12px 24px;
+  }
+  .btn-goal:hover { background: linear-gradient(135deg, #ffd740, #f5c518); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .grid-2 { grid-template-columns: 1fr; }
+    .grid-3 { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 600px) {
+    .grid-3 { grid-template-columns: 1fr; }
+  }
+
+  /* scrollbar global */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>⚽ Painel de Controle</h1>
+    <div class="subtitle">SISTEMA DE PLACAR PARA TRANSMISSÃO</div>
+  </div>
+  <div class="bc-status">
+    <div class="bc-dot"></div>
+    <span>Canal de broadcast ativo</span>
+  </div>
+</header>
+
+<!-- ── VISIBILIDADE MASTER ── -->
+<div class="master-vis">
+  <div>
+    <div class="master-vis-label" id="vis-label" style="color:var(--muted)">PLACAR OCULTO</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:2px">Exibição no OBS</div>
+  </div>
+  <label class="switch">
+    <input type="checkbox" id="toggle-visible" onchange="onToggleVisible()">
+    <span class="slider"></span>
+  </label>
+</div>
+
+<div class="grid" style="margin-bottom:16px">
+
+  <!-- ── MODO DE EXIBIÇÃO ── -->
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Modo de Exibição</div>
+    <div class="toggle-row">
+      <div>
+        <div class="toggle-label">Modo Completo (Logo + Nome Completo)</div>
+        <div class="toggle-desc">Desligado: abreviação sem logo · Ligado: nome completo + logo</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="toggle-fullmode" onchange="onToggleFullMode()">
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+
+</div>
+
+<div class="grid grid-2" style="margin-bottom:16px">
+
+  <!-- ── TIME A ── -->
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:var(--red)"></span>Time A (Casa)</div>
+
+    <div class="grid grid-2" style="gap:10px;margin-bottom:10px">
+      <div>
+        <label>Nome Completo</label>
+        <input type="text" id="a-name" value="Flamengo" oninput="syncState()">
+      </div>
+      <div>
+        <label>Abreviação</label>
+        <input type="text" id="a-abbr" value="FLA" maxlength="6" oninput="syncState()">
+      </div>
+    </div>
+
+    <div style="margin-bottom:10px">
+      <label>Cor do Bloco</label>
+      <input type="color" id="a-color" value="#c0392b" oninput="syncState()">
+    </div>
+
+    <div class="sep"></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:8px;letter-spacing:1px">LOGO</div>
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">
+      <div class="logo-preview empty" id="logo-preview-a"><img id="logo-preview-img-a" src="" alt="" style="display:none"></div>
+      <div class="logo-controls">
+        <input type="url" id="a-logo-url" placeholder="Cole URL da logo..." oninput="onLogoUrl('a')">
+        <input type="file" id="a-logo-file" accept="image/*" onchange="onLogoFile('a')">
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('a-logo-file').click()">⬆ Upload</button>
+          <button class="btn btn-ghost btn-sm" onclick="clearLogo('a')">✕ Limpar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sep"></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:8px;letter-spacing:1px">CARTÕES</div>
+    <div class="cards-row">
+      <span class="card-icon yellow"></span>
+      <span class="card-count" id="a-yellow-count">0</span>
+      <button class="btn btn-ghost btn-icon" onclick="adjustCard('a','yellow',1)">+</button>
+      <button class="btn btn-ghost btn-icon" onclick="adjustCard('a','yellow',-1)">−</button>
+
+      <div style="width:16px"></div>
+
+      <span class="card-icon red"></span>
+      <span class="card-count" id="a-red-count">0</span>
+      <button class="btn btn-ghost btn-icon" onclick="adjustCard('a','red',1)">+</button>
+      <button class="btn btn-ghost btn-icon" onclick="adjustCard('a','red',-1)">−</button>
+    </div>
+  </div>
+
+  <!-- ── TIME B ── -->
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:var(--accent2)"></span>Time B (Visitante)</div>
+
+    <div class="grid grid-2" style="gap:10px;margin-bottom:10px">
+      <div>
+        <label>Nome Completo</label>
+        <input type="text" id="b-name" value="Vasco" oninput="syncState()">
+      </div>
+      <div>
+        <label>Abreviação</label>
+        <input type="text" id="b-abbr" value="VAS" maxlength="6" oninput="syncState()">
+      </div>
+    </div>
+
+    <div style="margin-bottom:10px">
+      <label>Cor do Bloco</label>
+      <input type="color" id="b-color" value="#1565c0" oninput="syncState()">
+    </div>
+
+    <div class="sep"></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:8px;letter-spacing:1px">LOGO</div>
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">
+      <div class="logo-preview empty" id="logo-preview-b"><img id="logo-preview-img-b" src="" alt="" style="display:none"></div>
+      <div class="logo-controls">
+        <input type="url" id="b-logo-url" placeholder="Cole URL da logo..." oninput="onLogoUrl('b')">
+        <input type="file" id="b-logo-file" accept="image/*" onchange="onLogoFile('b')">
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('b-logo-file').click()">⬆ Upload</button>
+          <button class="btn btn-ghost btn-sm" onclick="clearLogo('b')">✕ Limpar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sep"></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:8px;letter-spacing:1px">CARTÕES</div>
+    <div class="cards-row">
+      <span class="card-icon yellow"></span>
+      <span class="card-count" id="b-yellow-count">0</span>
+      <button class="btn btn-ghost btn-icon" onclick="adjustCard('b','yellow',1)">+</button>
+      <button class="btn btn-ghost btn-icon" onclick="adjustCard('b','yellow',-1)">−</button>
+
+      <div style="width:16px"></div>
+
+      <span class="card-icon red"></span>
+      <span class="card-count" id="b-red-count">0</span>
+      <button class="btn btn-ghost btn-icon" onclick="adjustCard('b','red',1)">+</button>
+      <button class="btn btn-ghost btn-icon" onclick="adjustCard('b','red',-1)">−</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="grid grid-3" style="margin-bottom:16px">
+
+  <!-- ── PLACAR ── -->
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Placar</div>
+    <div class="score-block">
+      <div>
+        <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:4px">TIME A</div>
+        <div class="score-val" id="sc-a">0</div>
+        <div class="score-adj">
+          <button class="btn btn-green btn-sm" onclick="adjustScore('a',1)">+ GOL</button>
+          <button class="btn btn-ghost btn-sm" onclick="adjustScore('a',-1)">− Desfazer</button>
+        </div>
+      </div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--muted);margin-top:8px">×</div>
+      <div>
+        <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:4px">TIME B</div>
+        <div class="score-val" id="sc-b">0</div>
+        <div class="score-adj">
+          <button class="btn btn-green btn-sm" onclick="adjustScore('b',1)">+ GOL</button>
+          <button class="btn btn-ghost btn-sm" onclick="adjustScore('b',-1)">− Desfazer</button>
+        </div>
+      </div>
+    </div>
+    <div class="sep"></div>
+    <button class="btn btn-goal btn-full" onclick="sendGoal()">⚡ ANIMAR GOL!</button>
+  </div>
+
+  <!-- ── CRONÔMETRO ── -->
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Cronômetro</div>
+    <div class="timer-display" id="ctrl-timer">00:00</div>
+    <div class="timer-extra" id="ctrl-extra"></div>
+
+    <div class="timer-btns">
+      <button class="btn btn-green btn-full" id="btn-start" onclick="timerStart()">▶ INICIAR</button>
+      <button class="btn btn-warn" id="btn-pause" onclick="timerPause()" disabled>⏸</button>
+      <button class="btn btn-ghost btn-icon" onclick="timerReset()">↺</button>
+    </div>
+
+    <div class="sep"></div>
+    <label>Acréscimos (minutos)</label>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <input type="number" id="extra-time-input" value="0" min="0" max="30" style="width:80px">
+      <button class="btn btn-accent" onclick="setExtraTime()">Aplicar</button>
+      <button class="btn btn-ghost" onclick="clearExtraTime()">✕</button>
+    </div>
+  </div>
+
+  <!-- ── PERÍODO ── -->
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Período / Info</div>
+
+    <label>Período</label>
+    <select id="period-select" onchange="syncState()" style="margin-bottom:8px">
+      <option value="1º TEMPO">1º TEMPO</option>
+      <option value="2º TEMPO">2º TEMPO</option>
+      <option value="PRORROGAÇÃO">PRORROGAÇÃO</option>
+      <option value="PÊNALTIS">PÊNALTIS</option>
+      <option value="INTERVALO">INTERVALO</option>
+      <option value="ENCERRADO">ENCERRADO</option>
+    </select>
+
+    <div class="toggle-row" style="margin-bottom:10px">
+      <div class="toggle-label">Exibir período no placar</div>
+      <label class="switch">
+        <input type="checkbox" id="toggle-period" onchange="syncState()">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="sep"></div>
+    <label>Informação adicional</label>
+    <textarea id="info-text" placeholder="Ex: Estádio Maracanã · 50.000 presentes" style="margin-top:4px;min-height:60px" oninput="syncState()"></textarea>
+    <div class="toggle-row" style="margin-top:8px">
+      <div class="toggle-label">Exibir informação no placar</div>
+      <label class="switch">
+        <input type="checkbox" id="toggle-info" onchange="syncState()">
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── ESCALAÇÃO ── -->
+<div class="grid grid-2" style="margin-bottom:16px">
+
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:var(--red)"></span>Escalação — Time A</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <input type="number" id="a-lineup-num" placeholder="Nº" style="width:60px">
+      <input type="text" id="a-lineup-name" placeholder="Nome do jogador" style="flex:1">
+      <button class="btn btn-accent btn-sm" onclick="addPlayer('a')">+ Add</button>
+    </div>
+    <div class="lineup-list" id="lineup-list-a"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:var(--accent2)"></span>Escalação — Time B</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <input type="number" id="b-lineup-num" placeholder="Nº" style="width:60px">
+      <input type="text" id="b-lineup-name" placeholder="Nome do jogador" style="flex:1">
+      <button class="btn btn-accent btn-sm" onclick="addPlayer('b')">+ Add</button>
+    </div>
+    <div class="lineup-list" id="lineup-list-b"></div>
+  </div>
+
+</div>
+
+<div class="card" style="margin-bottom:16px">
+ 
