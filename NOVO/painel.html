@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Painel de Controlo — GitHub Sync</title>
+<title>Painel GGF — Placar OBS Sync</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;900&family=Oswald:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -44,7 +44,7 @@
 
 <header>
   <h1>⚽ Painel GGF — GitHub Sync</h1>
-  <span id="sync-status">Conectado ao repositório hologma4-lgtm/Dados-bck</span>
+  <span id="sync-status">● Pronto para sincronizar</span>
 </header>
 
 <div class="master-vis">
@@ -171,166 +171,175 @@
 </div>
 
 <script>
-const GITHUB_OWNER = "hologma4-lgtm";
-const GITHUB_REPO = "Dados-bck";
-const GITHUB_TOKEN = "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";
-const FILE_PATH = "estado-placar.json";
+  // Credenciais diretas e corretas do repositório de dados
+  const GITHUB_OWNER = "hologma4-lgtm";
+  const GITHUB_REPO = "Dados-bck";
+  const GITHUB_TOKEN = "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";
+  const FILE_PATH = "estado-placar.json";
 
-let state = {
-  visible: false,
-  fullMode: false,
-  scoreA: 0,
-  scoreB: 0,
-  timerSeconds: 0,
-  timerRunning: false,
-  period: '1º TEMPO',
-  showPeriod: false,
-  extraTime: 0,
-  info: '',
-  showInfo: false,
-  goalTrigger: 0,
-  teamA: { name: 'FLAMENGO', abbr: 'FLA', color: '#c0392b', logo: '', cards: { yellow: 0, red: 0 } },
-  teamB: { name: 'VASCO DA GAMA', abbr: 'VAS', color: '#1565c0', logo: '', cards: { yellow: 0, red: 0 } }
-};
+  let state = {
+    visible: false,
+    fullMode: false,
+    scoreA: 0,
+    scoreB: 0,
+    timerSeconds: 0,
+    timerRunning: false,
+    period: '1º TEMPO',
+    showPeriod: false,
+    extraTime: 0,
+    info: '',
+    showInfo: false,
+    goalTrigger: 0,
+    teamA: { name: 'FLAMENGO', abbr: 'FLA', color: '#c0392b', logo: '', cards: { yellow: 0, red: 0 } },
+    teamB: { name: 'VASCO DA GAMA', abbr: 'VAS', color: '#1565c0', logo: '', cards: { yellow: 0, red: 0 } }
+  };
 
-let timerInterval = null;
+  let timerInterval = null;
 
-async function syncToGitHub() {
-  state.visible = document.getElementById('chk-visible').checked;
-  state.fullMode = document.getElementById('chk-fullmode').checked;
-  state.teamA.name = document.getElementById('a-name').value;
-  state.teamA.abbr = document.getElementById('a-abbr').value;
-  state.teamA.color = document.getElementById('a-color').value;
-  state.teamA.logo = document.getElementById('a-logo').value;
+  // Função robusta de salvamento direto no GitHub usando o token clássico
+  async function syncToGitHub() {
+    state.visible = document.getElementById('chk-visible').checked;
+    state.fullMode = document.getElementById('chk-fullmode').checked;
+    state.teamA.name = document.getElementById('a-name').value;
+    state.teamA.abbr = document.getElementById('a-abbr').value;
+    state.teamA.color = document.getElementById('a-color').value;
+    state.teamA.logo = document.getElementById('a-logo').value;
 
-  state.teamB.name = document.getElementById('b-name').value;
-  state.teamB.abbr = document.getElementById('b-abbr').value;
-  state.teamB.color = document.getElementById('b-color').value;
-  state.teamB.logo = document.getElementById('b-logo').value;
+    state.teamB.name = document.getElementById('b-name').value;
+    state.teamB.abbr = document.getElementById('b-abbr').value;
+    state.teamB.color = document.getElementById('b-color').value;
+    state.teamB.logo = document.getElementById('b-logo').value;
 
-  state.period = document.getElementById('sel-period').value;
-  state.showPeriod = document.getElementById('chk-show-period').checked;
-  state.extraTime = parseInt(document.getElementById('num-extratime').value) || 0;
-  state.info = document.getElementById('inp-info').value;
-  state.showInfo = document.getElementById('chk-show-info').checked;
+    state.period = document.getElementById('sel-period').value;
+    state.showPeriod = document.getElementById('chk-show-period').checked;
+    state.extraTime = parseInt(document.getElementById('num-extratime').value) || 0;
+    state.info = document.getElementById('inp-info').value;
+    state.showInfo = document.getElementById('chk-show-info').checked;
 
-  document.getElementById('disp-score-a').textContent = state.scoreA;
-  document.getElementById('disp-score-b').textContent = state.scoreB;
+    document.getElementById('disp-score-a').textContent = state.scoreA;
+    document.getElementById('disp-score-b').textContent = state.scoreB;
 
-  document.getElementById('sync-status').textContent = '🔄 A guardar no GitHub...';
+    document.getElementById('sync-status').textContent = '🔄 A guardar no GitHub...';
 
-  const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${FILE_PATH}`;
+    const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${FILE_PATH}`;
 
-  try {
-    let sha = null;
-    
-    // Tenta buscar o ficheiro para obter o SHA atual (caso já exista)
-    const getRes = await fetch(url, {
-      headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
-    });
-    
-    if (getRes.ok) {
-      const fileData = await getRes.json();
-      sha = fileData.sha;
+    try {
+      let sha = null;
+
+      // 1. Tenta obter o SHA atual do ficheiro no repositório remoto (necessário para atualizar)
+      const getRes = await fetch(url, {
+        method: 'GET',
+        headers: { 
+          'Authorization': `token ${GITHUB_TOKEN}`,
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      });
+
+      if (getRes.ok) {
+        const fileData = await getRes.json();
+        sha = fileData.sha;
+      }
+
+      // 2. Codifica o objeto de estado em Base64 de forma segura contra caracteres especiais
+      const jsonString = JSON.stringify(state, null, 2);
+      const contentEncoded = btoa(unescape(encodeURIComponent(jsonString)));
+
+      // 3. Prepara o corpo da requisição PUT
+      const bodyData = {
+        message: 'Atualização do Placar via Painel GGF',
+        content: contentEncoded
+      };
+
+      if (sha) {
+        bodyData.sha = sha; // Obrigatório se o ficheiro já existir
+      }
+
+      // 4. Envia os dados para a API do GitHub
+      const putRes = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `token ${GITHUB_TOKEN}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/vnd.github.v3+json'
+        },
+        body: JSON.stringify(bodyData)
+      });
+
+      if (putRes.ok) {
+        document.getElementById('sync-status').textContent = '✅ Sincronizado com o GitHub!';
+      } else {
+        const errJson = await putRes.json();
+        console.error("Erro do GitHub:", errJson);
+        document.getElementById('sync-status').textContent = `❌ Erro: ${errJson.message || 'Falha ao guardar'}`;
+      }
+    } catch (err) {
+      console.error("Erro de rede:", err);
+      document.getElementById('sync-status').textContent = '❌ Erro de ligação à API.';
     }
-
-    const jsonString = JSON.stringify(state, null, 2);
-    const contentEncoded = btoa(unescape(encodeURIComponent(jsonString)));
-
-    const bodyData = {
-      message: 'Criar ou atualizar estado do placar via Painel GGF',
-      content: contentEncoded
-    };
-    
-    // Se o ficheiro já existir, o SHA é obrigatório para o GitHub aceitar o PUT
-    if (sha) {
-      bodyData.sha = sha;
-    }
-
-    const putRes = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `token ${GITHUB_TOKEN}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(bodyData)
-    });
-
-    if (putRes.ok) {
-      document.getElementById('sync-status').textContent = '✅ Sincronizado com o GitHub!';
-    } else {
-      const errJson = await putRes.json();
-      console.error("Erro do GitHub:", errJson);
-      document.getElementById('sync-status').textContent = `❌ Erro: ${errJson.message || 'Falha ao guardar'}`;
-    }
-  } catch (err) {
-    console.error(err);
-    document.getElementById('sync-status').textContent = '❌ Erro de ligação à API.';
   }
-}
 
-function adjustScore(team, val) {
-  if (team === 'a') state.scoreA = Math.max(0, state.scoreA + val);
-  if (team === 'b') state.scoreB = Math.max(0, state.scoreB + val);
-  syncToGitHub();
-}
+  function adjustScore(team, val) {
+    if (team === 'a') state.scoreA = Math.max(0, state.scoreA + val);
+    if (team === 'b') state.scoreB = Math.max(0, state.scoreB + val);
+    syncToGitHub();
+  }
 
-function triggerGoal() {
-  state.goalTrigger = Date.now();
-  syncToGitHub();
-}
+  function triggerGoal() {
+    state.goalTrigger = Date.now();
+    syncToGitHub();
+  }
 
-function addCard(team, type) {
-  if (team === 'a') state.teamA.cards[type]++;
-  if (team === 'b') state.teamB.cards[type]++;
-  syncToGitHub();
-}
+  function addCard(team, type) {
+    if (team === 'a') state.teamA.cards[type]++;
+    if (team === 'b') state.teamB.cards[type]++;
+    syncToGitHub();
+  }
 
-function clearCards(team) {
-  if (team === 'a') state.teamA.cards = { yellow: 0, red: 0 };
-  if (team === 'b') state.teamB.cards = { yellow: 0, red: 0 };
-  syncToGitHub();
-}
+  function clearCards(team) {
+    if (team === 'a') state.teamA.cards = { yellow: 0, red: 0 };
+    if (team === 'b') state.teamB.cards = { yellow: 0, red: 0 };
+    syncToGitHub();
+  }
 
-function toggleTimer() {
-  state.timerRunning = !state.timerRunning;
-  const btn = document.getElementById('btn-timer-toggle');
-  if (state.timerRunning) {
-    btn.textContent = '⏸ Pausar';
-    btn.className = 'btn btn-accent btn-full';
-    if (!timerInterval) {
-      timerInterval = setInterval(() => {
-        state.timerSeconds++;
-        updateTimerUI();
-        syncToGitHub();
-      }, 1000);
+  function toggleTimer() {
+    state.timerRunning = !state.timerRunning;
+    const btn = document.getElementById('btn-timer-toggle');
+    if (state.timerRunning) {
+      btn.textContent = '⏸ Pausar';
+      btn.className = 'btn btn-accent btn-full';
+      if (!timerInterval) {
+        timerInterval = setInterval(() => {
+          state.timerSeconds++;
+          updateTimerUI();
+          syncToGitHub();
+        }, 1000);
+      }
+    } else {
+      btn.textContent = '▶ Continuar';
+      btn.className = 'btn btn-green btn-full';
+      clearInterval(timerInterval);
+      timerInterval = null;
     }
-  } else {
-    btn.textContent = '▶ Continuar';
-    btn.className = 'btn btn-green btn-full';
+    syncToGitHub();
+  }
+
+  function resetTimer() {
+    state.timerRunning = false;
     clearInterval(timerInterval);
     timerInterval = null;
+    state.timerSeconds = 0;
+    document.getElementById('btn-timer-toggle').textContent = '▶ Iniciar';
+    document.getElementById('btn-timer-toggle').className = 'btn btn-green btn-full';
+    updateTimerUI();
+    syncToGitHub();
   }
-  syncToGitHub();
-}
 
-function resetTimer() {
-  state.timerRunning = false;
-  clearInterval(timerInterval);
-  timerInterval = null;
-  state.timerSeconds = 0;
-  document.getElementById('btn-timer-toggle').textContent = '▶ Iniciar';
-  document.getElementById('btn-timer-toggle').className = 'btn btn-green btn-full';
-  updateTimerUI();
-  syncToGitHub();
-}
-
-function updateTimerUI() {
-  let m = Math.floor(state.timerSeconds / 60);
-  let sec = state.timerSeconds % 60;
-  document.getElementById('ctrl-timer-display').textContent = 
-    String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
-}
+  function updateTimerUI() {
+    let m = Math.floor(state.timerSeconds / 60);
+    let sec = state.timerSeconds % 60;
+    document.getElementById('ctrl-timer-display').textContent = 
+      String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
+  }
 </script>
 </body>
 </html>
