@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Placar Futebol OBS</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #00b140;
+    --panel-bg: #ffffff;
+    --dark: #0d1b2a;
+    --accent: #22c55e;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+    --text: #1e293b;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --team1-color: #ef4444;
+    --team2-color: #1e293b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Barlow', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+    padding: 30px;
+  }
+
+  /* ─── SCOREBOARD ─── */
+  #scoreboard-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #scoreboard {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 18px 28px 12px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+    min-width: 320px;
+    display: none;
+  }
+
+  #scoreboard.visible { display: block; }
+
+  .score-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    justify-content: center;
+  }
+
+  .team-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: 2rem;
+    letter-spacing: 1px;
+    color: var(--dark);
+  }
+
+  .score-num {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: 2.4rem;
+    color: var(--dark);
+    min-width: 28px;
+    text-align: center;
+  }
+
+  .ball-icon {
+    width: 52px;
+    height: 52px;
+    background: var(--dark);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ball-icon::after {
+    content: '⚽';
+    filter: brightness(10);
+    font-size: 1.5rem;
+  }
+
+  .time-row {
+    text-align: center;
+    margin-top: 6px;
+    background: #e8f4ff;
+    border-radius: 8px;
+    padding: 3px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .period-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--dark);
+  }
+
+  .time-display {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--dark);
+  }
+
+  .team1-dot { color: var(--team1-color); }
+  .team2-dot { color: var(--team2-color); }
+
+  /* ─── CARD NOTIFICATION ─── */
+  #card-notif {
+    display: none;
+    margin-top: 8px;
+    background: #fff3cd;
+    border-left: 4px solid var(--yellow);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--dark);
+  }
+  #card-notif.red-card { background: #fee2e2; border-color: var(--red); }
+  #card-notif.visible { display: block; }
+
+  /* ─── GOAL ANIMATION ─── */
+  @keyframes goalSlideIn {
+    0%   { opacity: 0; transform: scaleY(0.3) scaleX(0.8); border-radius: 40px; }
+    40%  { opacity: 1; transform: scaleY(1.04) scaleX(1.01); border-radius: 20px; }
+    60%  { transform: scaleY(0.98) scaleX(1); border-radius: 20px; }
+    100% { transform: scale(1); border-radius: 20px; }
+  }
+  @keyframes goalSlideOut {
+    0%   { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scaleY(0.2) scaleX(0.9); border-radius: 40px; }
+  }
+  @keyframes goalTextPop {
+    0%   { transform: scale(0.4) translateY(10px); opacity: 0; }
+    55%  { transform: scale(1.12) translateY(-3px); opacity: 1; }
+    75%  { transform: scale(0.97) translateY(0); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes goalTeamSlide {
+    0%   { opacity: 0; transform: translateY(14px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes ballSpin {
+    0%   { transform: rotate(0deg) scale(0.5); opacity: 0; }
+    40%  { transform: rotate(200deg) scale(1.15); opacity: 1; }
+    70%  { transform: rotate(340deg) scale(0.95); }
+    100% { transform: rotate(360deg) scale(1); opacity: 1; }
+  }
+  @keyframes shimmer {
+    0%   { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+
+  #goal-anim {
+    display: none;
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    border-radius: 20px;
+    z-index: 10;
+    pointer-events: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 4px;
+    overflow: hidden;
+  }
+  #goal-anim.playing {
+    display: flex;
+    animation: goalSlideIn 0.45s cubic-bezier(0.22,1,0.36,1) forwards;
+  }
+  #goal-anim.hiding {
+    display: flex;
+    animation: goalSlideOut 0.35s ease-in forwards;
+  }
+
+  /* shimmer stripe across the overlay */
+  #goal-anim::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg,
+      transparent 30%,
+      rgba(255,255,255,0.18) 50%,
+      transparent 70%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.4s linear infinite;
+    border-radius: inherit;
+  }
+
+  #goal-anim .goal-ball {
+    font-size: 2.2rem;
+    animation: ballSpin 0.55s cubic-bezier(0.22,1,0.36,1) 0.1s both;
+    position: relative;
+    z-index: 1;
+  }
+  #goal-anim .goal-text {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: 2.8rem;
+    color: #fff;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    text-shadow: 0 3px 0 rgba(0,0,0,0.25), 0 0 20px rgba(0,0,0,0.2);
+    animation: goalTextPop 0.5s cubic-bezier(0.22,1,0.36,1) 0.15s both;
+    position: relative;
+    z-index: 1;
+    line-height: 1;
+  }
+  #goal-anim .goal-team {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: rgba(255,255,255,0.9);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    animation: goalTeamSlide 0.4s ease-out 0.35s both;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ─── CONTROL PANEL ─── */
+  #control-panel {
+    background: var(--panel-bg);
+    border-radius: 20px;
+    padding: 22px 22px;
+    width: 340px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .panel-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .panel-label {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text);
+    flex-shrink: 0;
+  }
+
+  .panel-label.lg {
+    font-size: 1.05rem;
+    font-weight: 800;
+  }
+
+  .panel-section {
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Toggle visibility button */
+  .toggle-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: var(--dark);
+    color: #fff;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+  .toggle-btn:hover { background: #1e3a5f; }
+  .toggle-btn.active { background: var(--accent); }
+
+  /* Placar label */
+  .placar-status {
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: var(--text);
+  }
+  .placar-status span {
+    color: var(--accent);
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  /* Score controls */
+  .score-ctrl {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .score-ctrl button {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    border: 1.5px solid var(--border);
+    background: #f8fafc;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--text);
+    line-height: 1;
+    transition: background 0.15s;
+  }
+  .score-ctrl button:hover { background: var(--border); }
+  .score-ctrl .score-val {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: 1.2rem;
+    min-width: 22px;
+    text-align: center;
+  }
+
+  /* Text input */
+  .ctrl-input {
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 4px 8px;
+    font-size: 0.9rem;
+    font-family: 'Barlow', sans-serif;
+    font-style: italic;
+    color: var(--text);
+    background: #f8fafc;
+    outline: none;
+    width: 80px;
+    transition: border 0.15s;
+  }
+  .ctrl-input:focus { border-color: #93c5fd; }
+  .ctrl-input.wide { width: 120px; }
+
+  /* Color dot picker */
+  .color-dots {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+  }
+  .color-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+  }
+  .color-dot:hover { transform: scale(1.3); }
+  .color-dot.selected { border-color: #1e293b; transform: scale(1.2); }
+  .color-picker-wrap {
+    position: relative;
+  }
+  .color-picker-wrap input[type="color"] {
+    width: 20px;
+    height: 20px;
+    border: none;
+    border-radius: 50%;
+    padding: 0;
+    cursor: pointer;
+    background: none;
+  }
+
+  /* Check toggle */
+  .check-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1.5px solid #ccc;
+    background: #f8fafc;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, border 0.15s;
+    flex-shrink: 0;
+  }
+  .check-btn.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* Goal animation triggers */
+  .goal-btns {
+    display: flex;
+    gap: 10px;
+  }
+  .goal-trigger {
+    padding: 5px 12px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: #f8fafc;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--text);
+    text-decoration: underline;
+    transition: background 0.15s;
+  }
+  .goal-trigger:hover { background: #dbeafe; }
+
+  /* Card section */
+  .card-select {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .card-opt {
+    padding: 4px 10px;
+    border-radius: 7px;
+    border: 1.5px solid var(--border);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: #f8fafc;
+    color: var(--text);
+    transition: background 0.15s, border 0.15s;
+  }
+  .card-opt.active-yellow { background: #fef3c7; border-color: var(--yellow); }
+  .card-opt.active-red { background: #fee2e2; border-color: var(--red); }
+  .card-opt .tick { margin-right: 3px; }
+
+  /* Timer controls */
+  .period-btns {
+    display: flex;
+    gap: 6px;
+  }
+  .period-btn {
+    padding: 4px 10px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    background: #f8fafc;
+    color: var(--text);
+    text-decoration: underline;
+    transition: background 0.15s;
+  }
+  .period-btn.active { background: var(--dark); color: #fff; text-decoration: none; border-color: var(--dark); }
+
+  .timer-btns {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .timer-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.15s;
+  }
+  .timer-btn:hover { opacity: 0.85; }
+  .timer-btn.play-pause { background: var(--yellow); color: #fff; }
+  .timer-btn.stop { background: #f59e0b; color: #fff; }
+
+  .timer-value {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: 1.5rem;
+    color: var(--dark);
+    min-width: 72px;
+    text-align: center;
+  }
+
+  /* Divider */
+  hr.divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2px 0;
+  }
+
+
+</style>
+</head>
+<body>
+
+<!-- SCOREBOARD PREVIEW -->
+<div id="scoreboard-area">
+  <div id="scoreboard" style="position:relative;">
+    <!-- GOAL ANIMATION (covers the scoreboard) -->
+    <div id="goal-anim">
+      <div class="goal-ball">⚽</div>
+      <div class="goal-text">GOL!</div>
+      <div class="goal-team" id="goal-team-label"></div>
+    </div>
+    <div class="score-row">
+      <span class="team-name" id="disp-team1">FLA</span>
+      <span class="score-num" id="disp-score1" style="color: var(--team1-color)">0</span>
+      <div class="ball-icon"></div>
+      <span class="score-num" id="disp-score2" style="color: var(--team2-color)">0</span>
+      <span class="team-name" id="disp-team2">VAS</span>
+    </div>
+    <div class="time-row">
+      <span class="period-label" id="disp-period">1º</span>
+      <span class="time-display" id="disp-time">00:00</span>
+    </div>
+    <div id="card-notif"></div>
+  </div>
+</div>
+
+<!-- CONTROL PANEL -->
+<div id="control-panel">
+
+  <!-- PLACAR visibility -->
+  <div class="panel-row">
+    <button class="toggle-btn" id="vis-btn" onclick="toggleScoreboard()" title="Mostrar/ocultar placar">👁</button>
+    <div>
+      <div class="placar-status">PLACAR: <span id="vis-label" onclick="toggleScoreboard()">OCULTO</span></div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- TEAM 1 -->
+  <div class="panel-row">
+    <span class="panel-label lg">Time 1:</span>
+    <input class="ctrl-input" id="inp-team1" value="FLA" oninput="updateTeam1Name()" placeholder="Nome">
+    <div class="score-ctrl">
+      <button onclick="adjustScore(1,-1)">−</button>
+      <span class="score-val" id="ctrl-score1">0</span>
+      <button onclick="adjustScore(1,1)">+</button>
+    </div>
+    <button class="check-btn on" id="chk-team1" onclick="toggleCheck('team1')" title="Exibir Time 1">✓</button>
+  </div>
+
+  <!-- Team 1 color -->
+  <div class="panel-row" style="padding-left:4px;">
+    <span class="panel-label">Cor:</span>
+    <div class="color-dots" id="dots-team1">
+      <div class="color-dot selected" style="background:#ef4444" onclick="setColor(1,'#ef4444',this)"></div>
+      <div class="color-dot" style="background:#f97316" onclick="setColor(1,'#f97316',this)"></div>
+      <div class="color-dot" style="background:#eab308" onclick="setColor(1,'#eab308',this)"></div>
+      <div class="color-dot" style="background:#22c55e" onclick="setColor(1,'#22c55e',this)"></div>
+      <div class="color-dot" style="background:#3b82f6" onclick="setColor(1,'#3b82f6',this)"></div>
+      <div class="color-dot" style="background:#0d1b2a" onclick="setColor(1,'#0d1b2a',this)"></div>
+    </div>
+    <input type="color" value="#ef4444" id="custom-color1" oninput="setColor(1,this.value,null)" title="Cor personalizada" style="width:22px;height:22px;border-radius:50%;border:1.5px solid #ccc;cursor:pointer;padding:0;">
+    <button class="check-btn on" id="chk-color1" onclick="toggleCheck('color1')" title="Aplicar cor">✓</button>
+  </div>
+
+  <hr class="divider">
+
+  <!-- TEAM 2 -->
+  <div class="panel-row">
+    <span class="panel-label lg">Time 2:</span>
+    <input class="ctrl-input" id="inp-team2" value="VAS" oninput="updateTeam2Name()" placeholder="Nome">
+    <div class="score-ctrl">
+      <button onclick="adjustScore(2,-1)">−</button>
+      <span class="score-val" id="ctrl-score2">0</span>
+      <button onclick="adjustScore(2,1)">+</button>
+    </div>
+    <button class="check-btn on" id="chk-team2" onclick="toggleCheck('team2')" title="Exibir Time 2">✓</button>
+  </div>
+
+  <!-- Team 2 color -->
+  <div class="panel-row" style="padding-left:4px;">
+    <span class="panel-label">Cor:</span>
+    <div class="color-dots" id="dots-team2">
+      <div class="color-dot" style="background:#ef4444" onclick="setColor(2,'#ef4444',this)"></div>
+      <div class="color-dot" style="background:#f97316" onclick="setColor(2,'#f97316',this)"></div>
+      <div class="color-dot" style="background:#eab308" onclick="setColor(2,'#eab308',this)"></div>
+      <div class="color-dot" style="background:#22c55e" onclick="setColor(2,'#22c55e',this)"></div>
+      <div class="color-dot" style="background:#3b82f6" onclick="setColor(2,'#3b82f6',this)"></div>
+      <div class="color-dot selected" style="background:#0d1b2a" onclick="setColor(2,'#0d1b2a',this)"></div>
+    </div>
+    <input type="color" value="#0d1b2a" id="custom-color2" oninput="setColor(2,this.value,null)" title="Cor personalizada" style="width:22px;height:22px;border-radius:50%;border:1.5px solid #ccc;cursor:pointer;padding:0;">
+    <button class="check-btn on" id="chk-color2" onclick="toggleCheck('color2')" title="Aplicar cor">✓</button>
+  </div>
+
+  <hr class="divider">
+
+  <!-- GOAL ANIMATION -->
+  <div class="panel-row panel-section">
+    <span class="panel-label lg">Animação de Gol</span>
+  </div>
+  <div class="panel-row goal-btns">
+    <button class="goal-trigger" onclick="triggerGoal(1)">Time 1</button>
+    <button class="check-btn on" id="chk-goal1" onclick="toggleCheck('goal1')" title="Habilitar gol Time 1">✓</button>
+    <button class="goal-trigger" onclick="triggerGoal(2)">Time 2</button>
+    <button class="check-btn on" id="chk-goal2" onclick="toggleCheck('goal2')" title="Habilitar gol Time 2">✓</button>
+  </div>
+
+  <hr class="divider">
+
+  <!-- CARD -->
+  <div class="panel-row panel-section">
+    <span class="panel-label lg">Cartão</span>
+    <div class="card-select">
+      <button class="card-opt" id="card-yellow" onclick="selectCardType('yellow')"><span class="tick">✓</span>Amarelo</button>
+      <button class="card-opt active-red" id="card-red" onclick="selectCardType('red')"><span class="tick">✓</span>Vermelho</button>
+    </div>
+  </div>
+  <div class="panel-row">
+    <button class="card-opt active-red" id="card-team-btn" onclick="cycleCardTeam()"><span class="tick">✓</span><span id="card-team-label">Time 2</span></button>
+    <input class="ctrl-input wide" id="inp-jogador" value="Jogador" placeholder="Jogador" style="font-style:italic">
+    <button class="check-btn on" id="chk-card" onclick="showCardNotif()" title="Exibir cartão">✓</button>
+  </div>
+  <div class="panel-row">
+    <input class="ctrl-input wide" id="inp-info" value="Informação Adicional" placeholder="Info adicional" style="font-style:italic">
+    <button class="check-btn on" id="chk-info" onclick="toggleCheck('info')" title="Exibir info">✓</button>
+  </div>
+
+  <hr class="divider">
+
+  <!-- TEMPO / TIMER -->
+  <div class="panel-row panel-section">
+    <span class="panel-label lg">TEMPO</span>
+    <div class="period-btns">
+      <button class="period-btn active" id="btn-1st" onclick="setPeriod(1)">1ºst</button>
+      <button class="period-btn" id="btn-2nd" onclick="setPeriod(2)">2ºst</button>
+      <button class="period-btn" id="btn-et" onclick="setPeriod('et')">+_</button>
+    </div>
+  </div>
+  <div class="panel-row timer-btns">
+    <button class="timer-btn play-pause" id="btn-play" onclick="toggleTimer()">⏭</button>
+    <button class="timer-btn stop" onclick="stopTimer()">⏹</button>
+    <span class="timer-value" id="timer-display">00:00</span>
+  </div>
+
+</div>
+
+<script>
+  // ─── STATE ───
+  let scores = [0, 0];
+  let timerSeconds = 0;
+  let timerRunning = false;
+  let timerInterval = null;
+  let currentPeriod = 1;
+  let scoreboardVisible = false;
+  let cardType = 'red';
+  let cardTeam = 2;
+
+  // ─── SCOREBOARD VISIBILITY ───
+  function toggleScoreboard() {
+    scoreboardVisible = !scoreboardVisible;
+    document.getElementById('scoreboard').classList.toggle('visible', scoreboardVisible);
+    const lbl = document.getElementById('vis-label');
+    const btn = document.getElementById('vis-btn');
+    if (scoreboardVisible) {
+      lbl.textContent = 'EXIBIDO';
+      lbl.style.color = 'var(--accent)';
+      btn.classList.add('active');
+    } else {
+      lbl.textContent = 'OCULTO';
+      lbl.style.color = '#ef4444';
+      btn.classList.remove('active');
+    }
+  }
+
+  // ─── TEAM NAMES ───
+  function updateTeam1Name() {
+    document.getElementById('disp-team1').textContent = document.getElementById('inp-team1').value || 'T1';
+  }
+  function updateTeam2Name() {
+    document.getElementById('disp-team2').textContent = document.getElementById('inp-team2').value || 'T2';
+  }
+
+  // ─── SCORES ───
+  function adjustScore(team, delta) {
+    const i = team - 1;
+    scores[i] = Math.max(0, scores[i] + delta);
+    document.getElementById('ctrl-score' + team).textContent = scores[i];
+    document.getElementById('disp-score' + team).textContent = scores[i];
+  }
+
+  // ─── COLORS ───
+  function setColor(team, color, dotEl) {
+    const prop = team === 1 ? '--team1-color' : '--team2-color';
+    document.documentElement.style.setProperty(prop, color);
+    document.getElementById('disp-score' + team).style.color = color;
+    if (dotEl) {
+      document.querySelectorAll(`#dots-team${team} .color-dot`).forEach(d => d.classList.remove('selected'));
+      dotEl.classList.add('selected');
+      document.getElementById('custom-color' + team).value = color;
+    }
+  }
+
+  // ─── CHECK BUTTONS ───
+  function toggleCheck(id) {
+    const btn = document.getElementById('chk-' + id);
+    btn.classList.toggle('on');
+  }
+
+  // ─── GOAL ANIMATION ───
+  let goalTimeout = null;
+  function triggerGoal(team) {
+    const chk = document.getElementById('chk-goal' + team);
+    if (!chk.classList.contains('on')) return;
+    const teamName = document.getElementById('inp-team' + team).value || 'Time ' + team;
+    const teamColor = getComputedStyle(document.documentElement)
+      .getPropertyValue(team === 1 ? '--team1-color' : '--team2-color').trim();
+
+    const el = document.getElementById('goal-anim');
+    document.getElementById('goal-team-label').textContent = teamName;
+    el.style.background = teamColor;
+
+    // reset
+    clearTimeout(goalTimeout);
+    el.className = '';
+    void el.offsetWidth;
+    el.classList.add('playing');
+
+    goalTimeout = setTimeout(() => {
+      el.classList.remove('playing');
+      el.classList.add('hiding');
+      setTimeout(() => { el.className = ''; }, 380);
+    }, 2800);
+  }
+
+  // ─── CARD ───
+  function selectCardType(type) {
+    cardType = type;
+    document.getElementById('card-yellow').classList.toggle('active-yellow', type === 'yellow');
+    document.getElementById('card-yellow').classList.toggle('active-red', false);
+    document.getElementById('card-red').classList.toggle('active-red', type === 'red');
+    document.getElementById('card-red').classList.toggle('active-yellow', false);
+    if (type === 'yellow') {
+      document.getElementById('card-yellow').classList.add('active-yellow');
+      document.getElementById('card-red').className = 'card-opt';
+    } else {
+      document.getElementById('card-red').classList.add('active-red');
+      document.getElementById('card-yellow').className = 'card-opt';
+    }
+  }
+
+  function cycleCardTeam() {
+    cardTeam = cardTeam === 1 ? 2 : 1;
+    document.getElementById('card-team-label').textContent = 'Time ' + cardTeam;
+  }
+
+  function showCardNotif() {
+    const notif = document.getElementById('card-notif');
+    const chkInfo = document.getElementById('chk-info');
+    const jogador = document.getElementById('inp-jogador').value;
+    const info = document.getElementById('inp-info').value;
+    const teamName = cardTeam === 1
+      ? (document.getElementById('inp-team1').value || 'Time 1')
+      : (document.getElementById('inp-team2').value || 'Time 2');
+    const cardLabel = cardType === 'red' ? '🟥' : '🟨';
+    let text = `${cardLabel} ${teamName} — ${jogador}`;
+    if (chkInfo.classList.contains('on') && info) text += ` (${info})`;
+    notif.textContent = text;
+    notif.className = 'card-notif visible' + (cardType === 'red' ? ' red-card' : '');
+    notif.style.display = 'block';
+    setTimeout(() => { notif.style.display = 'none'; }, 6000);
+  }
+
+  // ─── PERIOD ───
+  function setPeriod(p) {
+    currentPeriod = p;
+    ['1st','2nd','et'].forEach(id => document.getElementById('btn-' + id)?.classList.remove('active'));
+    const map = {1:'1st',2:'2nd','et':'et'};
+    document.getElementById('btn-' + map[p])?.classList.add('active');
+    const labels = {1:'1º',2:'2º','et':'PE'};
+    document.getElementById('disp-period').textContent = labels[p] || '1º';
+  }
+
+  // ─── TIMER ───
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function formatTime(secs) {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return pad(m) + ':' + pad(s);
+  }
+
+  function updateTimerDisplay() {
+    const t = formatTime(timerSeconds);
+    document.getElementById('timer-display').textContent = t;
+    document.getElementById('disp-time').textContent = t;
+  }
+
+  function toggleTimer() {
+    if (timerRunning) {
+      clearInterval(timerInterval);
+      timerRunning = false;
+      document.getElementById('btn-play').textContent = '⏭';
+    } else {
+      timerRunning = true;
+      document.getElementById('btn-play').textContent = '⏸';
+      timerInterval = setInterval(() => {
+        timerSeconds++;
+        updateTimerDisplay();
+      }, 1000);
+    }
+  }
+
+  function stopTimer() {
+    clearInterval(timerInterval);
+    timerRunning = false;
+    timerSeconds = 0;
+    document.getElementById('btn-play').textContent = '⏭';
+    updateTimerDisplay();
+  }
+
+
+  updateTimerDisplay();
+  selectCardType('red');
+</script>
+</body>
+</html>

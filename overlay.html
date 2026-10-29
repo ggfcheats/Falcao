@@ -1,0 +1,256 @@
+<!-- =========================
+ARQUIVO: overlay.html
+========================= -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Overlay OBS</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Montserrat', sans-serif;
+}
+
+body{
+    background:transparent;
+    overflow:hidden;
+}
+
+.scoreboard{
+
+    position:absolute;
+    top:20px;
+    left:50%;
+    transform:translateX(-50%);
+
+    display:flex;
+    align-items:center;
+
+    background:rgba(0,0,0,.88);
+
+    border-radius:16px;
+    overflow:hidden;
+
+    min-width:720px;
+}
+
+.team{
+    width:260px;
+    padding:15px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+
+    color:white;
+    font-size:26px;
+    font-weight:700;
+}
+
+.center{
+    background:#111;
+    color:white;
+    padding:15px 35px;
+    text-align:center;
+}
+
+.score{
+    font-size:44px;
+    font-weight:800;
+}
+
+.time{
+    margin-top:5px;
+    font-size:20px;
+    font-weight:600;
+}
+
+.logo{
+    width:42px;
+    height:42px;
+    object-fit:contain;
+    display:none;
+}
+
+.competition{
+
+    position:absolute;
+    top:120px;
+    left:50%;
+    transform:translateX(-50%);
+
+    background:#111;
+    color:white;
+
+    padding:10px 25px;
+    border-radius:12px;
+
+    font-size:20px;
+    font-weight:700;
+}
+
+.cards{
+
+    position:absolute;
+    top:180px;
+    left:50%;
+    transform:translateX(-50%);
+
+    display:flex;
+    gap:40px;
+
+    background:rgba(0,0,0,.82);
+
+    color:white;
+
+    padding:15px 30px;
+    border-radius:12px;
+}
+
+.yellow{
+    color:yellow;
+    font-weight:700;
+}
+
+.redTxt{
+    color:red;
+    font-weight:700;
+}
+
+</style>
+</head>
+<body>
+
+<div class="scoreboard">
+
+<div class="team" id="homeTeam">
+
+<img id="homeLogoImg" class="logo">
+
+<span id="homeTeamName">
+FLA
+</span>
+
+</div>
+
+<div class="center">
+
+<div class="score">
+<span id="homeScore">0</span>
+X
+<span id="awayScore">0</span>
+</div>
+
+<div class="time" id="matchTime">
+00:00
+</div>
+
+</div>
+
+<div class="team" id="awayTeam">
+
+<span id="awayTeamName">
+VAS
+</span>
+
+<img id="awayLogoImg" class="logo">
+
+</div>
+
+</div>
+
+<div class="competition" id="competition">
+CAMPEONATO
+</div>
+
+<div class="cards">
+
+<div>
+🟨 <span class="yellow" id="yellowHome">0</span>
+🟥 <span class="redTxt" id="redHome">0</span>
+</div>
+
+<div>
+🟨 <span class="yellow" id="yellowAway">0</span>
+🟥 <span class="redTxt" id="redAway">0</span>
+</div>
+
+</div>
+
+<script>
+
+function updateOverlay(){
+
+    const d = JSON.parse(localStorage.getItem("scoreboardData"));
+
+    if(!d) return;
+
+    const homeName = document.getElementById("homeTeamName");
+    const awayName = document.getElementById("awayTeamName");
+
+    const homeLogo = document.getElementById("homeLogoImg");
+    const awayLogo = document.getElementById("awayLogoImg");
+
+    if(d.fullMode){
+
+        homeName.innerText = d.homeName;
+        awayName.innerText = d.awayName;
+
+        if(d.homeLogo){
+            homeLogo.src = d.homeLogo;
+            homeLogo.style.display = "block";
+        }
+
+        if(d.awayLogo){
+            awayLogo.src = d.awayLogo;
+            awayLogo.style.display = "block";
+        }
+
+    }else{
+
+        homeName.innerText = d.homeShort;
+        awayName.innerText = d.awayShort;
+
+        homeLogo.style.display = "none";
+        awayLogo.style.display = "none";
+    }
+
+    document.getElementById("homeScore").innerText = d.homeScore;
+    document.getElementById("awayScore").innerText = d.awayScore;
+
+    document.getElementById("matchTime").innerText = d.time;
+
+    document.getElementById("competition").innerText = d.competition;
+
+    document.getElementById("yellowHome").innerText = d.yellowHome;
+    document.getElementById("redHome").innerText = d.redHome;
+
+    document.getElementById("yellowAway").innerText = d.yellowAway;
+    document.getElementById("redAway").innerText = d.redAway;
+
+    document.getElementById("homeTeam").style.background = d.homeColor;
+    document.getElementById("awayTeam").style.background = d.awayColor;
+}
+
+updateOverlay();
+
+setInterval(updateOverlay,100);
+
+</script>
+
+</body>
+</html>
