@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Placar - Visualização OBS</title>
+<title>Placar - Visualização OBS (GitHub Sync)</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;900&family=Oswald:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -197,13 +197,25 @@
 <div id="info-bar"></div>
 
 <script>
-const bc = new BroadcastChannel('football_scoreboard');
+// CONFIGURAÇÕES DO REPOSITÓRIO ONDE O ARQUIVO JSON VICA SALVO
+const GITHUB_OWNER = "SEU_USUARIO_AQUI"; 
+const GITHUB_REPO = "SEU_REPOSITORIO_AQUI";
+const FILE_PATH = "estado-placar.json";
 
-bc.onmessage = (e) => {
-  const { type, data } = e.data;
-  if (type === 'state') applyState(data);
-  if (type === 'goal') triggerGoalAnim();
-};
+let ultimoGolTrigger = 0;
+
+async function buscarEstadoDoGitHub() {
+  const url = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/${FILE_PATH}?t=${Date.now()}`;
+  try {
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      applyState(data);
+    }
+  } catch (err) {
+    console.error("Erro ao buscar dados do GitHub:", err);
+  }
+}
 
 function applyState(s) {
   document.getElementById('scoreboard').classList.toggle('visible', s.visible);
@@ -238,6 +250,12 @@ function applyState(s) {
   const ib = document.getElementById('info-bar');
   ib.textContent = s.info;
   ib.classList.toggle('show', s.showInfo && s.info.length > 0);
+
+  // Detectar disparo de gol remoto via timestamp
+  if (s.goalTrigger && s.goalTrigger > ultimoGolTrigger) {
+    ultimoGolTrigger = s.goalTrigger;
+    triggerGoalAnim();
+  }
 }
 
 function renderCards(team, cards) {
@@ -257,6 +275,10 @@ function triggerGoalAnim() {
   void flash.offsetWidth;
   flash.classList.add('animate');
 }
+
+// Atualiza a cada 2 segundos puxando direto do GitHub
+setInterval(buscarEstadoDoGitHub, 2000);
+buscarEstadoDoGitHub();
 </script>
 </body>
 </html>
